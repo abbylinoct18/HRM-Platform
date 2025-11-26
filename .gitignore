@@ -1,0 +1,33 @@
+Python artifacts
+
+pycache/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.venv
+venv/
+env/
+pip-log.txt
+pip-delete-this-file.txt
+.tox/
+
+Node.js (if any dependency management is used)
+
+node_modules/
+npm-debug.log
+yarn-error.log
+
+Docker artifacts
+
+Exclude build context/temporary files, but keep config files
+
+*.env
+.vscode/
+
+Build artifacts
+
+dist/
+build/
+*.zip
+*.tar.gz

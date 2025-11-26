@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+
+    # 1. FastAPI 後端服務
+    backend:
+        build:
+            context: .
+            dockerfile: Dockerfile.backend # 使用自定義的後端 Dockerfile
+        container_name: hrm_backend
+        # 將容器埠號 8000 映射到主機埠號 8000 (用於外部訪問和測試)
+        ports:
+            - "8000:8000"
+        # 設定重啟策略
+        restart: always
+
+    # 2. 前端服務 (服務 index.html)
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile.frontend # 使用自定義的前端 Dockerfile
+        container_name: hrm_frontend
+        # 將容器埠號 3000 映射到主機埠號 3000
+        ports:
+            - "3000:3000"
+        # 前端依賴後端啟動
+        depends_on:
+            - backend
+        # 設定重啟策略
+        restart: always

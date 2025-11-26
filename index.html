@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HRM 平台</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 配置自定義顏色和字體 -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-blue': '#104A70',
+                        'secondary-cyan': '#256D85',
+                        'accent-yellow': '#FFD700',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* 更好的視覺效果滾動條 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #999; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- 標頭 -->
+        <header class="mb-8 p-4 bg-primary-blue text-white rounded-lg shadow-xl">
+            <h1 class="text-3xl font-extrabold tracking-tight">人力資源管理平台 (HRM)</h1>
+            <p class="text-sm opacity-90 mt-1">員工資料管理與批次上傳介面</p>
+        </header>
+
+        <!-- 通知區域 -->
+        <div id="notification-container" class="fixed top-4 right-4 z-50"></div>
+
+        <!-- 主要內容網格 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- 員工管理面板 (Lg: 2/3 寬度) -->
+            <div class="lg:col-span-2">
+                <section class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                    
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-4 sm:space-y-0">
+                        <h2 class="text-2xl font-semibold text-gray-700">
+                            現有員工
+                        </h2>
+                        <button id="add-employee-btn" class="px-4 py-2 bg-secondary-cyan text-white text-sm font-medium rounded-lg hover:bg-opacity-90 transition duration-150 shadow-md">
+                            + 新增員工
+                        </button>
+                    </div>
+
+                    <!-- 篩選區域 -->
+                    <div id="filter-area" class="mb-4">
+                        <label for="search-input" class="block text-sm font-medium text-gray-700 mb-1">篩選 (姓名 / 員工編號 / 部門 / 職位)</label>
+                        <input type="text" id="search-input" placeholder="輸入關鍵字進行篩選..." class="block w-full rounded-md border-gray-300 shadow-sm focus:border-secondary-cyan focus:ring focus:ring-secondary-cyan focus:ring-opacity-50 p-2 border">
+                    </div>
+                    
+                    <!-- 員工表格 -->
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <!-- 新增員工編號欄位 -->
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">員工編號</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">姓名</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">職位</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">部門</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">薪資 (TWD)</th> 
+                                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employee-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- 員工行將由 JavaScript 插入 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+
+            <!-- 側邊面板 (Lg: 1/3 寬度) -->
+            <div class="lg:col-span-1 space-y-8">
+                <!-- 批次上傳卡片 -->
+                <section class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-4">批次上傳</h2>
+                    <p class="text-sm text-gray-500 mb-4">
+                        上傳包含員工資料的 **CSV 格式** 檔案。欄位順序必須為：姓名 (Name), **員工編號 (EmployeeNo)**, 職位 (Position), 部門 (Department), 薪資 (Salary)。
+                        **所有欄位均為必填**。不支援 .xlsx 檔案。
+                    </p>
+                    <button id="download-sample-btn" class="mb-4 px-4 py-2 text-sm font-medium text-primary-blue border border-primary-blue rounded-lg hover:bg-gray-100 transition duration-150 shadow-sm">
+                        下載範例 CSV 檔案
+                    </button>
+                    <form id="bulk-upload-form" class="space-y-4">
+                        <label for="file-upload" class="block text-sm font-medium text-gray-700">選擇檔案 (.csv, .txt)</label>
+                        <input type="file" id="file-upload" name="file" accept=".csv, .txt" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-blue file:text-white hover:file:bg-opacity-90 transition duration-150">
+                        <button type="submit" class="w-full px-4 py-2 bg-primary-blue text-white font-medium rounded-lg hover:bg-opacity-90 transition duration-150 shadow-md">
+                            處理上傳
+                        </button>
+                    </form>
+                </section>
+
+                <!-- 狀態/說明卡片 -->
+                <section class="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">系統資訊</h2>
+                    <p class="text-sm text-gray-600">
+                        <span class="font-medium">後端 API 網址:</span> <code id="backend-url-display">http://backend:8000</code>
+                    </p>
+                    <p class="text-sm text-gray-600 mt-2">
+                        <span class="font-medium">API 狀態:</span> <span id="api-status" class="font-semibold text-red-500">檢查中...</span>
+                    </p>
+                    <p class="text-xs mt-4 text-gray-400">
+                        注意：在容器化設定中，前端使用 Docker 服務名稱 `backend` 來與 API 通訊。
+                    </p>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模態框 (用於新增/編輯員工) -->
+    <div id="employee-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center p-4 z-50 transition-opacity duration-300" aria-modal="true" role="dialog">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 transform transition-all duration-300 scale-95 opacity-0">
+            <h3 id="modal-title" class="text-2xl font-bold mb-4 text-primary-blue">新增員工</h3>
+            <form id="employee-form" class="space-y-4">
+                <input type="hidden" id="employee-id">
+
+                <!-- 員工編號欄位 -->
+                <div>
+                    <label for="employee-code" class="block text-sm font-medium text-gray-700">員工編號</label>
+                    <input type="text" id="employee-code" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-secondary-cyan focus:ring focus:ring-secondary-cyan focus:ring-opacity-50 p-2 border">
+                </div>
+
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">姓名</label>
+                    <input type="text" id="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-secondary-cyan focus:ring focus:ring-secondary-cyan focus:ring-opacity-50 p-2 border">
+                </div>
+                <div>
+                    <label for="position" class="block text-sm font-medium text-gray-700">職位</label>
+                    <input type="text" id="position" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-secondary-cyan focus:ring focus:ring-secondary-cyan focus:ring-opacity-50 p-2 border">
+                </div>
+                <div>
+                    <label for="department" class="block text-sm font-medium text-gray-700">部門</label>
+                    <input type="text" id="department" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-secondary-cyan focus:ring focus:ring-secondary-cyan focus:ring-opacity-50 p-2 border">
+                </div>
+                <div>
+                    <label for="salary" class="block text-sm font-medium text-gray-700">薪資 (TWD)</label>
+                    <input type="number" id="salary" required step="100" min="0" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-secondary-cyan focus:ring focus:ring-secondary-cyan focus:ring-opacity-50 p-2 border">
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" id="close-modal-btn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition duration-150">
+                        取消
+                    </button>
+                    <button type="submit" id="submit-form-btn" class="px-4 py-2 text-sm font-medium text-white bg-secondary-cyan rounded-lg hover:bg-opacity-90 transition duration-150 shadow-md">
+                        儲存員工
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 新增錯誤詳情模態框 (用於批次上傳錯誤) -->
+    <div id="error-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 hidden items-center justify-center p-4 z-50 transition-opacity duration-300" aria-modal="true" role="dialog">
+        <div id="error-modal-content" class="bg-white rounded-xl shadow-2xl w-full max-w-3xl p-6 transform transition-all duration-300 scale-95 opacity-0">
+            <h3 class="text-2xl font-bold mb-4 text-red-600">批次上傳錯誤詳情</h3>
+            <p id="error-summary" class="text-sm text-gray-700 mb-4">
+                <!-- 摘要將由 JavaScript 填充 -->
+            </p>
+            <div class="max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100 sticky top-0 z-10">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">行號</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">錯誤訊息</th>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">資料</th>
+                        </tr>
+                    </thead>
+                    <tbody id="error-table-body" class="bg-white divide-y divide-gray-200">
+                        <!-- 錯誤行將由 JavaScript 插入 -->
+                    </tbody>
+                </table>
+            </div>
+            <div class="flex justify-end space-x-3 pt-4">
+                <button type="button" id="close-error-modal-btn" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition duration-150 shadow-md">
+                    關閉
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        // 對於 Docker Compose，使用服務名稱 'backend:8000'；對於本地測試，使用 'localhost:8000'
+        const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ?
+                            'http://localhost:8000' :
+                            'http://backend:8000';
+
+        document.getElementById('backend-url-display').textContent = API_BASE_URL;
+
+        let employeesCache = [];
+
+        // --- 工具函數 ---
+
+        /** 顯示臨時通知訊息。 */
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notification-container');
+            const color = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+
+            const alert = document.createElement('div');
+            alert.className = `p-4 mb-2 text-sm text-white ${color} rounded-lg shadow-xl opacity-0 transform translate-x-10 transition-all duration-300`;
+            alert.textContent = message;
+
+            container.prepend(alert);
+
+            // 動畫進入
+            setTimeout(() => {
+                alert.classList.remove('opacity-0', 'translate-x-10');
+                alert.classList.add('opacity-100', 'translate-x-0');
+            }, 10);
+
+            // 動畫退出並在 5 秒後移除
+            setTimeout(() => {
+                alert.classList.remove('opacity-100', 'translate-x-0');
+                alert.classList.add('opacity-0', 'translate-x-10');
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        }
+
+        /** 格式化數字為貨幣 (TWD 整數)。 */
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('zh-TW', { // 使用台灣地區格式
+                style: 'currency',
+                currency: 'TWD', // 設置為新台幣
+                minimumFractionDigits: 0, // 確保為整數
+            }).format(amount);
+        }
+        
+        /** 下載範例 CSV 檔案。 (更新：包含 employee_code) */
+        function downloadSampleCsv() {
+            // 更新：新增員工編號欄位
+            const headers = ["姓名", "員工編號", "職位", "部門", "薪資"]; 
+            const sampleData = [
+                ["陳大明", "P1001", "高級工程師", "研發部", "90000"],
+                ["黃小君", "P1002", "市場專員", "行銷部", "65000"],
+                ["劉經理", "P1003", "財務主管", "財務部", "110000"]
+            ];
+
+            let csvContent = headers.join(",") + "\n";
+            sampleData.forEach(row => {
+                csvContent += row.join(",") + "\n";
+            });
+
+            // 建立 Blob 物件 (用於處理中文編碼，使用 BOM 確保 Excel 兼容)
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'hrm_employee_sample.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+
+        // --- API 狀態檢查 ---
+        async function checkApiStatus() {
+            const statusElement = document.getElementById('api-status');
+            try {
+                const response = await fetch(API_BASE_URL + '/');
+                if (response.ok) {
+                    statusElement.textContent = '運作中';
+                    statusElement.classList.remove('text-red-500');
+                    statusElement.classList.add('text-green-600');
+                    fetchEmployees();
+                } else {
+                    statusElement.textContent = '失敗 (HTTP ' + response.status + ')';
+                    statusElement.classList.remove('text-green-600');
+                    statusElement.classList.add('text-red-500');
+                    showNotification("API 無回應。請檢查 Docker 容器。", "error");
+                }
+            } catch (error) {
+                console.error("API Connection Error:", error); 
+                statusElement.textContent = '已停止';
+                statusElement.classList.remove('text-green-600');
+                statusElement.classList.add('text-red-500');
+                showNotification("API 連線錯誤。請確保後端服務正在運行。", "error");
+            }
+        }
+
+        // --- 篩選與渲染邏輯 ---
+
+        /** 根據當前的 employeesCache 和搜索輸入進行篩選並渲染。 */
+        function applyFilters() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+            let filteredEmployees = employeesCache;
+
+            if (searchTerm) {
+                filteredEmployees = employeesCache.filter(employee => 
+                    employee.name.toLowerCase().includes(searchTerm) ||
+                    employee.employee_code.toLowerCase().includes(searchTerm) || // 篩選加入員工編號
+                    employee.department.toLowerCase().includes(searchTerm) ||
+                    employee.position.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            renderEmployees(filteredEmployees);
+        }
+        
+        /** 渲染員工表格。 */
+        function renderEmployees(employees) {
+            const tbody = document.getElementById('employee-table-body');
+            tbody.innerHTML = ''; 
+
+            if (employees.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 text-center text-gray-500 italic">未找到員工資料。</td> <!-- 欄位數增加到 6 -->
+                    </tr>
+                `;
+                return;
+            }
+
+            employees.forEach(employee => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50 transition duration-100';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-blue">${employee.employee_code}</td> <!-- 顯示員工編號 -->
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${employee.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${employee.position}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">${employee.department}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden md:table-cell">${formatCurrency(employee.salary)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="openModalForEdit('${employee.id}')" class="text-primary-blue hover:text-secondary-cyan mr-3 transition duration-150" title="編輯">
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-9-3l9-9m-9 9l3 3m0-6l-3-3m-3 3l3 3m-3-3l-3 3"></path></svg>
+                        </button>
+                        <button onclick="deleteEmployee('${employee.id}')" class="text-red-500 hover:text-red-700 transition duration-150" title="刪除">
+                            <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /** 從 API 獲取所有員工資料。 */
+        async function fetchEmployees() {
+            try {
+                const response = await fetch(API_BASE_URL + '/employees');
+                
+                if (!response.ok) {
+                    console.error(`API request to ${API_BASE_URL}/employees failed with status: ${response.status}`);
+                    throw new Error('Failed to fetch data');
+                }
+                const employees = await response.json();
+                
+                employeesCache = employees;
+                applyFilters();
+
+            } catch (error) {
+                console.error("Error fetching employees:", error);
+            }
+        }
+
+        /** 處理儲存 (新增或更新) 員工。 */
+        async function handleSaveEmployee(event) {
+            event.preventDefault();
+            const id = document.getElementById('employee-id').value;
+            const employee_code = document.getElementById('employee-code').value.trim(); // 獲取員工編號
+            const name = document.getElementById('name').value.trim();
+            const position = document.getElementById('position').value.trim();
+            const department = document.getElementById('department').value.trim();
+            const salary = parseInt(document.getElementById('salary').value);
+
+            // 前端快速檢查非空
+            if (!employee_code || !name || !position || !department) {
+                showNotification("所有文字欄位皆為必填，請檢查。", 'error');
+                return;
+            }
+
+            // 檢查薪資
+            if (isNaN(salary) || salary < 0) {
+                showNotification("薪資必須是有效的正整數。", 'error');
+                return;
+            }
+
+            // 更新資料結構
+            const employeeData = { employee_code, name, position, department, salary };
+            let url = API_BASE_URL + '/employees';
+            let method = 'POST';
+            let successMessage = '員工新增成功！';
+
+            if (id) {
+                url += '/' + id;
+                method = 'PUT';
+                successMessage = '員工更新成功！';
+            }
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(employeeData),
+                });
+
+                if (!response.ok) {
+                    const errorJson = await response.json();
+                    // 顯示後端傳回的唯一性或驗證錯誤
+                    throw new Error(errorJson.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                closeModal();
+                showNotification(successMessage);
+                fetchEmployees(); 
+
+            } catch (error) {
+                console.error("Error saving employee:", error);
+                showNotification(`儲存員工失敗: ${error.message}`, 'error');
+            }
+        }
+
+        /** 刪除員工。 */
+        async function deleteEmployee(id) {
+            // 使用內建的 confirm 替代 custom modal，但提醒在實際應用中應使用 custom modal
+            if (!confirm("您確定要刪除此員工紀錄嗎？")) return; 
+
+            try {
+                const response = await fetch(API_BASE_URL + `/employees/${id}`, {
+                    method: 'DELETE',
+                });
+
+                if (!response.ok) {
+                    const errorJson = await response.json();
+                    throw new Error(errorJson.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                showNotification("員工刪除成功。");
+                fetchEmployees(); 
+
+            } catch (error) {
+                console.error("Error deleting employee:", error);
+                showNotification(`刪除員工失敗: ${error.message}`, 'error');
+            }
+        }
+        
+        // --- 模態框控制 (Employee Modal) ---
+
+        const modal = document.getElementById('employee-modal');
+        const modalContent = modal.querySelector('div:nth-child(1)'); 
+        const modalTitle = document.getElementById('modal-title');
+        const form = document.getElementById('employee-form');
+
+        function openModal() {
+            modal.classList.remove('hidden');
+            modal.classList.add('flex', 'opacity-100');
+            
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+                modalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function closeModal() {
+            modalContent.classList.remove('scale-100', 'opacity-100');
+            modalContent.classList.add('scale-95', 'opacity-0');
+
+            setTimeout(() => {
+                modal.classList.remove('flex', 'opacity-100');
+                modal.classList.add('hidden');
+                form.reset(); 
+                document.getElementById('employee-id').value = '';
+                document.getElementById('employee-code').disabled = false; // 確保新增/編輯時啟用
+            }, 300);
+        }
+
+        async function openModalForEdit(id) {
+            try {
+                const response = await fetch(API_BASE_URL + `/employees/${id}`);
+                if (!response.ok) throw new Error('Employee not found');
+                const employee = await response.json();
+
+                modalTitle.textContent = '編輯員工';
+                document.getElementById('employee-id').value = employee.id;
+                document.getElementById('name').value = employee.name;
+                document.getElementById('position').value = employee.position;
+                document.getElementById('department').value = employee.department;
+                document.getElementById('salary').value = employee.salary; 
+                
+                // 允許編輯員工編號
+                document.getElementById('employee-code').value = employee.employee_code;
+                document.getElementById('employee-code').disabled = false; // 已移除禁用設定
+                
+                openModal();
+            } catch (error) {
+                showNotification(`無法載入員工資料進行編輯: ${error.message}`, 'error');
+            }
+        }
+        
+        // --- 模態框控制 (Error Modal for Bulk Upload) ---
+        const errorModal = document.getElementById('error-modal');
+        const errorTableBody = document.getElementById('error-table-body');
+        const errorSummary = document.getElementById('error-summary');
+        const errorModalContent = document.getElementById('error-modal-content');
+
+        /** 顯示批次上傳的詳細錯誤列表 */
+        function openErrorModal(errors, successful_uploads) {
+            const totalErrors = errors.length;
+            const totalRecords = totalErrors + successful_uploads;
+
+            // 更新摘要
+            errorSummary.textContent = `本次上傳共 ${totalRecords} 筆資料。成功新增 ${successful_uploads} 筆，${totalErrors} 筆因錯誤而略過。`;
+            
+            errorTableBody.innerHTML = '';
+            errors.forEach(err => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-red-50 transition duration-100';
+                
+                // 確保 err.data 是一個陣列，並將其用逗號連接
+                const dataString = Array.isArray(err.data) ? err.data.join(', ') : 'N/A';
+                
+                row.innerHTML = `
+                    <td class="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">${err.row}</td>
+                    <td class="px-3 py-2 text-sm text-red-600 font-medium">${err.error}</td>
+                    <td class="px-3 py-2 text-sm text-gray-500 max-w-xs truncate" title="${dataString}">${dataString}</td>
+                `;
+                errorTableBody.appendChild(row);
+            });
+
+            errorModal.classList.remove('hidden');
+            errorModal.classList.add('flex', 'opacity-100');
+            
+            setTimeout(() => {
+                errorModalContent.classList.remove('scale-95', 'opacity-0');
+                errorModalContent.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        /** 關閉批次上傳錯誤列表 */
+        function closeErrorModal() {
+            errorModalContent.classList.remove('scale-100', 'opacity-100');
+            errorModalContent.classList.add('scale-95', 'opacity-0');
+
+            setTimeout(() => {
+                errorModal.classList.remove('flex', 'opacity-100');
+                errorModal.classList.add('hidden');
+            }, 300);
+        }
+        
+        /** 處理批次檔案上傳。(更新：使用專門的錯誤模態框顯示詳細錯誤) */
+        async function handleBulkUpload(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('file-upload');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showNotification("請選擇要上傳的檔案。", 'info');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(API_BASE_URL + '/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    // 處理非 200 狀態碼 (如 400 檔案格式/標頭錯誤)
+                    throw new Error(result.detail || `HTTP error! status: ${response.status}`);
+                }
+
+                // 檢查是否有行級別錯誤
+                if (result.errors && result.errors.length > 0) {
+                    // 顯示明確的總結通知
+                    showNotification(`上傳完成。成功 ${result.successful_uploads} 筆，失敗 ${result.errors.length} 筆。請點擊「確定」查看詳情。`, 'error');
+                    openErrorModal(result.errors, result.successful_uploads); // 使用新模態框顯示詳細錯誤
+                } else {
+                     showNotification(result.message);
+                }
+
+                fileInput.value = ''; 
+                fetchEmployees();
+
+            } catch (error) {
+                console.error("Error during bulk upload:", error);
+                // 對於整體上傳失敗 (如檔案編碼、標頭錯誤)，直接顯示錯誤訊息
+                showNotification(`批次上傳失敗: ${error.message}`, 'error');
+            }
+        }
+
+        // --- 事件監聽器和初始載入 ---
+        document.addEventListener('DOMContentLoaded', () => {
+            checkApiStatus();
+
+            document.getElementById('add-employee-btn').addEventListener('click', () => {
+                modalTitle.textContent = '新增員工';
+                document.getElementById('employee-code').disabled = false; // 新增時啟用編號輸入
+                openModal();
+            });
+
+            document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+            // 監聽錯誤模態框的關閉按鈕
+            document.getElementById('close-error-modal-btn').addEventListener('click', closeErrorModal);
+            
+            form.addEventListener('submit', handleSaveEmployee);
+            
+            document.getElementById('download-sample-btn').addEventListener('click', downloadSampleCsv);
+
+            document.getElementById('bulk-upload-form').addEventListener('submit', handleBulkUpload);
+
+            document.getElementById('search-input').addEventListener('input', applyFilters);
+        });
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# 使用輕量級 Python 基礎映像
+FROM python:3.11-slim
+
+# 設定工作目錄
+WORKDIR /usr/share/nginx/html
+
+# 複製單一 HTML 檔案
+COPY index.html .
+
+# 暴露靜態網頁伺服器運行的埠號
+EXPOSE 3000
+
+# 使用 Python 內建的簡單 HTTP 伺服器來服務靜態檔案
+CMD ["python", "-m", "http.server", "3000"]
