@@ -26,7 +26,7 @@ hrm_platform/
 ├── index.html              # 🌐 前端 UI 介面
 ├── main.py                 # 🏠 FastAPI 後端服務
 ├── requirements.txt        # 📦 後端 Python 依賴清單 (FastAPI, Uvicorn)
-├── sample_employees.csv    # 📄 批次上傳 CSV 範例檔案
+├── hrm_employee_sample.csv    # 📄 批次上傳 CSV 範例檔案
 ├── .gitignore              # 🚫 Git 忽略清單 (忽略環境文件和快取)
 └── README.md               # 專案說明文件 (此檔案)
 ```
