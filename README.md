@@ -20,14 +20,15 @@
 ## 📂 專案結構
 ```
 hrm_platform/
-├── main.py                # 🏠 FastAPI 後端服務
-├── index.html             # 🌐 前端 UI 介面
-├── hrm_employee_sample.csv# 📄 批次上傳 CSV 範例檔案
-├── docker-compose.yml     # 🐳 服務定義 (backend, frontend)
-├── Dockerfile.backend     # Python/FastAPI 容器建構檔
-├── Dockerfile.frontend    # Nginx/Frontend 容器建構檔
-├── .gitignore             # Git 忽略清單
-└── README.md              # 專案說明文件 (此檔案)
+├── Dockerfile.backend      # Python/FastAPI 容器建構檔
+├── Dockerfile.frontend     # Nginx/Frontend 容器建構檔
+├── docker-compose.yml      # 🐳 服務定義 (backend, frontend)
+├── index.html              # 🌐 前端 UI 介面
+├── main.py                 # 🏠 FastAPI 後端服務
+├── requirements.txt        # 📦 後端 Python 依賴清單 (FastAPI, Uvicorn)
+├── sample_employees.csv    # 📄 批次上傳 CSV 範例檔案
+├── .gitignore              # 🚫 Git 忽略清單 (忽略環境文件和快取)
+└── README.md               # 專案說明文件 (此檔案)
 ```
 
 ## 👉 執行步驟 (使用 Docker Compose)
@@ -45,7 +46,7 @@ hrm_platform/
 - 服務啟動後：
 	- 前端介面 (HRM Web App): 瀏覽器開啟 [http://localhost:8000](http://localhost:8000) (依據 docker-compose.yml 設定)。
 	- 後端 API 文件 (Swagger UI) 驗證：
-		- 瀏覽器開啟 [http://localhost:8000/docs](http://localhost:8000/docs)。
+		- 瀏覽器開啟 [http://localhost:8000/docs](http://localhost:8000/docs) 。
 		- FastAPI 會自動生成互動式的 Swagger UI 介面，您可以在此查看所有 API 端點（如 `/employees`, `/upload`）。
 		- 如何驗證：
 			- 點擊任一端點（例如 `GET /employees`）。
