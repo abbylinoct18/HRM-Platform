@@ -44,7 +44,7 @@ hrm_platform/
 
 步驟 2: 存取應用程式與 API 驗證
 - 服務啟動後：
-	- 前端介面 (HRM Web App): 瀏覽器開啟 [http://localhost:8000](http://localhost:8000) (依據 docker-compose.yml 設定)。
+	- 前端介面 (HRM Web App): 瀏覽器開啟 [http://localhost:3000](http://localhost:3000) (依據 docker-compose.yml 設定)。
 	- 後端 API 文件 (Swagger UI) 驗證：
 		- 瀏覽器開啟 [http://localhost:8000/docs](http://localhost:8000/docs) 。
 		- FastAPI 會自動生成互動式的 Swagger UI 介面，您可以在此查看所有 API 端點（如 `/employees`, `/upload`）。
