@@ -53,7 +53,7 @@ hrm_platform/
 步驟 2: 訪問與驗證應用程式
 - 務啟動後，請透過瀏覽器訪問以下網址進行功能驗證：
 	- HRM 平台: [http://localhost:3000](http://localhost:3000) 主應用程式，驗證 CRUD 操作和持久化功能。
-	- API 文件: [http://localhost:8000/docsFastAPI](http://localhost:8000/docsFastAPI) 互動式 API 文件 (Swagger UI)。
+	- API 文件: [http://localhost:8000/docs](http://localhost:8000/docs) FastAPI 互動式 API 文件 (Swagger UI)。
 	- pgAdmin 4 (管理): [http://localhost:5050](http://localhost:5050) 資料庫圖形化管理工具。
 - 重要功能測試： 
 	- 資料新增： 在 [http://localhost:3000](http://localhost:3000) 頁面上新增一筆員工或使用批次上傳功能匯入員工資料。
