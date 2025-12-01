@@ -2,29 +2,68 @@ version: '3.8'
 
 services:
 
-    # 1. FastAPI 後端服務
+    # 1. FastAPI 後端服務 (新增依賴和環境變數)
     backend:
         build:
             context: .
-            dockerfile: Dockerfile.backend # 使用自定義的後端 Dockerfile
+            dockerfile: Dockerfile.backend
         container_name: hrm_backend
-        # 將容器埠號 8000 映射到主機埠號 8000 (用於外部訪問和測試)
         ports:
             - "8000:8000"
-        # 設定重啟策略
         restart: always
+        # 【新增】確保資料庫服務啟動後，後端才啟動
+        depends_on:
+            - db
+        # 【新增】設定資料庫連線字串，主機名稱使用服務名稱 'db'
+        environment:
+            DATABASE_URL: postgresql://user:password@db:5432/db_name
 
-    # 2. 前端服務 (服務 index.html)
+    # 2. 前端服務 (保持不變)
     frontend:
         build:
             context: .
-            dockerfile: Dockerfile.frontend # 使用自定義的前端 Dockerfile
+            dockerfile: Dockerfile.frontend
         container_name: hrm_frontend
-        # 將容器埠號 3000 映射到主機埠號 3000
         ports:
             - "3000:3000"
-        # 前端依賴後端啟動
         depends_on:
             - backend
-        # 設定重啟策略
         restart: always
+
+    # 3. 【新增】PostgreSQL 資料庫服務
+    db:
+        image: postgres:16-alpine # 輕量級 PostgreSQL 映像
+        container_name: hrm_postgres_db
+        environment:
+            # 資料庫連線資訊，必須與 DATABASE_URL 配置一致
+            POSTGRES_USER: user
+            POSTGRES_PASSWORD: password
+            POSTGRES_DB: db_name
+        ports:
+            # 外部存取埠 (可選，用於調試)
+            - "5432:5432" 
+        volumes:
+            # 確保資料持久化
+            - postgres_data:/var/lib/postgresql/data/
+        restart: always
+
+    # 4. 【新增】pgAdmin 4 服務 (PostgreSQL 的管理介面)
+    pgadmin:
+        image: dpage/pgadmin4
+        container_name: hrm_pgadmin
+        environment:
+            # 登入 pgAdmin 介面時使用的帳號密碼
+            PGADMIN_DEFAULT_EMAIL: admin@hrm.com
+            PGADMIN_DEFAULT_PASSWORD: supersecret
+            # 設定 pgAdmin 內建的伺服器名稱（方便連線）
+            PGADMIN_CONFIG_SERVER_MODE: 'False'
+        ports:
+            # 將容器埠號 80 映射到主機埠號 5050 (您可以選擇任何不衝突的埠號)
+            - "5050:80" 
+        depends_on:
+            - db # 確保資料庫先啟動
+        restart: always
+        
+# 【新增】外部儲存卷定義
+volumes:
+    postgres_data:
