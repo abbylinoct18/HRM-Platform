@@ -78,6 +78,6 @@ docker compose down
 ```
 - 停止並移除所有容器、網路和服務，但保留持久化資料 (postgres_data volume)。
 ```
-docker compose down
+docker volume rm hrm_platform_postgres_data
 ```
-- 永久刪除所有員工資料。僅在需要重置資料庫時使用。
+- 永久刪除所有員工資料，僅在需要重置資料庫時使用。
